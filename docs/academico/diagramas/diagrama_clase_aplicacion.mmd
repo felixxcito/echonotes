@@ -1,0 +1,128 @@
+---
+title: EchoNotes - Diagrama de clases (capa de aplicacion)
+---
+classDiagram
+    direction TB
+
+    class EchoNotesCLI {
+        <<Controller>>
+        +transcribe(audio_file, output, format, instruments)
+        +serve(host, port, model)
+        +list_instruments()
+    }
+
+    class EchoNotesAPI {
+        <<Controller>>
+        +GET /health()
+        +GET /instruments()
+        +POST /transcribe(file, instruments) SSE
+        +POST /transcribe/midi(file, instruments)
+        +POST /auralize(midi, audio, mode)
+        +POST /sheets(midi, quantized)
+        +GET /soundfonts/MuseScore_General.sf3()
+    }
+
+    class TranscribeLock {
+        <<Guard>>
+        +acquire_transcribe_lock(client_id)
+        +release()
+    }
+
+    class TranscriptionModel {
+        <<Service>>
+        +load_model(weights_path, device, dtype)$
+        +transcribe(audio, instruments)
+        +transcribe_and_postprocess(audio, detect_tempo, quantize)
+    }
+
+    class SheetsService {
+        <<Service>>
+        +find_musescore()
+        +write_sheets(midi_bytes, out_dir, quantized)
+    }
+
+    class AuralizationService {
+        <<Service>>
+        +synthesize(midi_path, output_path)
+        +auralize(midi_path, original_audio_path, output_path)
+    }
+
+    class ModelDownloader {
+        <<Repository>>
+        +download_if_necessary(url) Path
+        +download_companion(url, filename) Path
+    }
+
+    class App {
+        <<View>>
+        +screen: welcome | transcribe
+        +startTranscription()
+        +transcribeAnother()
+    }
+
+    class WelcomeScreen {
+        <<View>>
+        +onPickFile(file)
+        +onUseExample()
+        +onTranscribe()
+    }
+
+    class ConditioningPanel {
+        <<View>>
+        +add(instrumento)
+        +remove(instrumento)
+    }
+
+    class OutputBar {
+        <<View>>
+        +download()
+        +downloadWav(mode)
+        +downloadSheets()
+    }
+
+    class useTranscription {
+        <<Hook>>
+        +transcribe(file)
+        +abort()
+    }
+
+    class SSEClient {
+        <<Client>>
+        +streamTranscribeWithRetry(file, options)
+    }
+
+    class AudioEngine {
+        <<Service>>
+        +loadWav(file)
+        +play()
+        +pause()
+        +seek(seconds)
+        +setMix(midiAmount)
+    }
+
+    class PianoRoll {
+        <<View>>
+        +addNote(note)
+        +setPlayhead(seconds)
+        +render()
+    }
+
+    EchoNotesCLI --> TranscriptionModel : usa
+    EchoNotesCLI --> SheetsService : usa
+    EchoNotesCLI ..> EchoNotesAPI : serve inicia
+    EchoNotesAPI --> TranscriptionModel : inyecta
+    EchoNotesAPI ..> TranscribeLock : usa
+    EchoNotesAPI --> SheetsService : usa
+    EchoNotesAPI --> AuralizationService : usa
+    TranscriptionModel --> ModelDownloader : descarga pesos
+    AuralizationService --> ModelDownloader : descarga SoundFont
+    App *-- WelcomeScreen
+    App *-- OutputBar
+    WelcomeScreen *-- ConditioningPanel
+    App --> useTranscription : usa
+    useTranscription --> SSEClient : usa
+    useTranscription --> AudioEngine : programa notas
+    useTranscription --> PianoRoll : dibuja notas
+    SSEClient ..> EchoNotesAPI : HTTP POST /transcribe
+    OutputBar ..> EchoNotesAPI : HTTP POST /auralize, /sheets
+    ConditioningPanel ..> EchoNotesAPI : HTTP GET /instruments

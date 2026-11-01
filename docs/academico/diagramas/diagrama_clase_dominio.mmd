@@ -1,0 +1,165 @@
+---
+title: EchoNotes - Diagrama de clases (capa de dominio)
+---
+classDiagram
+    direction TB
+
+    class TranscriptionModel {
+        <<Service>>
+        -_model: LMModel
+        -_tokenizer: MT3Tokenizer
+        -_device: torch.device
+        +load_model(weights_path, device, dtype)$ TranscriptionModel
+        +transcribe(audio, instruments) Iterator~Evento~
+        +transcribe_and_postprocess(audio, quantize) tuple
+        +detect_beat_grid_for(audio) BeatGrid
+        +events_to_midi_bytes(events, beat_grid) bytes
+    }
+
+    class LMModel {
+        <<Model>>
+        +card: int
+        +dim: int
+        +cfg_coef: float
+        +forward(sequence, conditions)
+        +generate(prompt, conditions, max_gen_len) Tensor
+    }
+
+    class StreamingTransformer {
+        <<Module>>
+        +init_state(batch_size, sequence_length)
+        +forward(x)
+    }
+
+    class StreamingTransformerLayer {
+        <<Module>>
+        +forward(x, state)
+    }
+
+    class StreamingMultiheadAttention {
+        <<Module>>
+        +forward(query, state)
+    }
+
+    class StatefulModule {
+        <<Abstract>>
+        +init_state(batch_size, sequence_length)
+        +increment_step(state)
+    }
+
+    class ConditioningProvider {
+        <<Module>>
+        +tokenize(inputs) dict
+        +forward(tokenized) dict
+    }
+
+    class MelSpectrogramConditioner {
+        <<Conditioner>>
+        +tokenize(wav) WavCondition
+        +forward(wav) ConditionType
+    }
+
+    class ClassConditioner {
+        <<Conditioner>>
+        +tokenize(labels) Tensor
+        +forward(inputs) ConditionType
+    }
+
+    class ConditioningAttributes {
+        <<Data>>
+        +text: dict
+        +wav: dict
+    }
+
+    class WavCondition {
+        <<Data>>
+        +wav: Tensor
+        +length: Tensor
+        +sample_rate: list
+    }
+
+    class MT3Tokenizer {
+        <<Tokenizer>>
+        +num_tokens: int
+        +frame_rate: int
+        +tie_section_token_ids(open_notes) list
+        +forbidden_token_ids(instruments) list
+    }
+
+    class Event {
+        <<Data>>
+        +type: str
+        +value: int
+    }
+
+    class Note {
+        <<Data>>
+        +is_drum: bool
+        +program: int
+        +onset: float
+        +offset: float
+        +pitch: int
+    }
+
+    class OpenNoteTracker {
+        <<Decoder>>
+        +feed(token) list
+        +finish() list
+    }
+
+    class NoteStartEvent {
+        <<Event>>
+        +pitch: int
+        +start_time: float
+        +index: int
+        +instrument: str
+    }
+
+    class NoteEndEvent {
+        <<Event>>
+        +end_time: float
+        +start_event: NoteStartEvent
+    }
+
+    class ProgressEvent {
+        <<Event>>
+        +completed: int
+        +total: int
+    }
+
+    class BeatGrid {
+        <<Data>>
+        +bpm: float
+        +beats_per_bar: int
+        +first_downbeat: float
+        +beat_subdivision: int
+        +bar_offset() float
+    }
+
+    class SheetsWriter {
+        <<Utility>>
+        +find_musescore() str
+        +write_sheets(midi_bytes, out_dir, quantized) list
+    }
+
+    TranscriptionModel --> LMModel : usa
+    TranscriptionModel --> MT3Tokenizer : usa
+    TranscriptionModel ..> NoteStartEvent : emite
+    TranscriptionModel ..> NoteEndEvent : emite
+    TranscriptionModel ..> ProgressEvent : emite
+    TranscriptionModel ..> BeatGrid : detecta
+    TranscriptionModel ..> OpenNoteTracker : decodifica con
+    TranscriptionModel ..> ConditioningAttributes : construye
+    LMModel *-- StreamingTransformer : contiene
+    LMModel *-- ConditioningProvider : contiene
+    StreamingTransformer *-- StreamingTransformerLayer : capas
+    StreamingTransformerLayer *-- StreamingMultiheadAttention : atencion
+    StatefulModule <|-- StreamingTransformer
+    StatefulModule <|-- StreamingMultiheadAttention
+    ConditioningProvider o-- MelSpectrogramConditioner : audio
+    ConditioningProvider o-- ClassConditioner : instrumentos
+    ConditioningAttributes *-- WavCondition
+    MT3Tokenizer *-- Event : vocabulario
+    OpenNoteTracker ..> Event : lee
+    NoteEndEvent --> NoteStartEvent : cierra
+    SheetsWriter ..> Note : graba MIDI cuantizado

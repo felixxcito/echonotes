@@ -1,0 +1,101 @@
+---
+title: EchoNotes - Diagrama de clases general
+---
+classDiagram
+    direction TB
+
+    namespace Frontend {
+        class App {
+            <<View>>
+            +startTranscription()
+            +transcribeAnother()
+        }
+        class useTranscription {
+            <<Hook>>
+            +transcribe(file)
+            +abort()
+        }
+        class AudioEngine {
+            <<Service>>
+            +play()
+            +pause()
+            +setMix(midiAmount)
+        }
+        class PianoRoll {
+            <<View>>
+            +addNote(note)
+            +render()
+        }
+    }
+
+    namespace Aplicacion {
+        class EchoNotesAPI {
+            <<Controller>>
+            +POST /transcribe()
+            +POST /sheets()
+            +POST /auralize()
+            +GET /instruments()
+        }
+        class EchoNotesCLI {
+            <<Controller>>
+            +transcribe()
+            +serve()
+            +list_instruments()
+        }
+        class SheetsService {
+            <<Service>>
+            +write_sheets(midi_bytes, out_dir)
+        }
+        class AuralizationService {
+            <<Service>>
+            +auralize(midi, audio, output)
+        }
+    }
+
+    namespace Dominio {
+        class TranscriptionModel {
+            <<Service>>
+            +load_model()$
+            +transcribe(audio, instruments)
+            +transcribe_and_postprocess(audio)
+        }
+        class LMModel {
+            <<Model>>
+            +generate(prompt, conditions)
+        }
+        class MT3Tokenizer {
+            <<Tokenizer>>
+            +forbidden_token_ids(instruments)
+        }
+        class NoteStartEvent {
+            <<Event>>
+            +pitch: int
+            +start_time: float
+            +instrument: str
+        }
+        class NoteEndEvent {
+            <<Event>>
+            +end_time: float
+        }
+        class BeatGrid {
+            <<Data>>
+            +bpm: float
+            +beats_per_bar: int
+        }
+    }
+
+    App --> useTranscription : usa
+    useTranscription --> AudioEngine : programa notas
+    useTranscription --> PianoRoll : dibuja
+    useTranscription ..> EchoNotesAPI : HTTP / SSE
+    EchoNotesCLI ..> EchoNotesAPI : serve inicia
+    EchoNotesCLI --> TranscriptionModel : usa
+    EchoNotesAPI --> TranscriptionModel : inyecta
+    EchoNotesAPI --> SheetsService : usa
+    EchoNotesAPI --> AuralizationService : usa
+    TranscriptionModel --> LMModel : usa
+    TranscriptionModel --> MT3Tokenizer : usa
+    TranscriptionModel ..> NoteStartEvent : emite
+    TranscriptionModel ..> NoteEndEvent : emite
+    TranscriptionModel ..> BeatGrid : detecta
+    NoteEndEvent --> NoteStartEvent : cierra

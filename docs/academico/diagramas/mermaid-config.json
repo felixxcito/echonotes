@@ -1,0 +1,11 @@
+{
+  "theme": "neutral",
+  "themeVariables": {
+    "fontFamily": "Inter, Helvetica, Arial, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryBorderColor": "#1f2937",
+    "lineColor": "#1f2937",
+    "primaryTextColor": "#111827"
+  }
+}

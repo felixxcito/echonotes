@@ -1,0 +1,22 @@
+*.safetensors
+*.pyc
+*.mid
+!headache_mastered.mid
+*.wav
+*.mp3
+!headache_by_lost_deposit_1min.mp3
+# For development
+!headache_by_lost_deposit_10s.mp3
+*.ogg
+*.sf2
+web/node_modules
+echonotes/web_dist/
+web/tsconfig.tsbuildinfo
+/dist
+*.egg-info
+__pycache__
+.DS_Store
+.claude/settings.local.json
+.claude/worktrees/
+.venv/
+.pytest_cache/
