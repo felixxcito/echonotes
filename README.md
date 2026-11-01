@@ -4,6 +4,21 @@
 
 # EchoNotes
 
+<!-- teaser:start -->
+<p align="center">
+<img src="docs/screenshots/01-subir-audio.jpg" width="32%" alt="Pantalla para subir una canción y transcribirla a MIDI y partitura"> <img src="docs/screenshots/02-seleccion-instrumentos.jpg" width="32%" alt="Selector de instrumentos para guiar la transcripción"> <img src="docs/screenshots/03-diagrama-clases-general.jpg" width="32%" alt="Diagrama de clases general: frontend, aplicación y dominio">
+</p>
+
+<details><summary>Más capturas</summary>
+
+<p align="center">
+<img src="docs/screenshots/04-diagrama-clases-aplicacion.jpg" width="48%" alt="Diagrama de clases de la capa de aplicación (API, servicios, cliente SSE)" title="Diagrama de clases de la capa de aplicación (API, servicios, cliente SSE)"> <img src="docs/screenshots/05-diagrama-clases-dominio.jpg" width="48%" alt="Diagrama de clases del dominio (modelo de transcripción y tokenizador)" title="Diagrama de clases del dominio (modelo de transcripción y tokenizador)">
+</p>
+
+</details>
+<!-- teaser:end -->
+
+
 Aplicación web y de línea de comandos para la **transcripción musical automática**: recibe una grabación de audio (mp3, wav, flac, …) y obtiene las notas que toca cada instrumento en formato **MIDI**, **partituras en PDF**, **MusicXML** y **tablaturas** de guitarra y bajo. El proyecto está dividido en dos partes dentro del mismo repositorio: un backend en Python (modelo de IA + API REST con FastAPI + CLI) y un frontend web desarrollado con React + Vite.
 
 EchoNotes es una copia modificada de [MuScriptor](https://github.com/muscriptor/muscriptor), el modelo abierto de transcripción multiinstrumento de Kyutai y Mirelo (código bajo licencia MIT). Para este proyecto se cambió el nombre, la estética (tema claro), el idioma de la interfaz y del CLI (español) y se agregó la documentación del sistema.
